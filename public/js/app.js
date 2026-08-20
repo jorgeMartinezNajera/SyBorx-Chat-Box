@@ -158,6 +158,8 @@
     $('tab-login').classList.toggle('active', mode === 'login');
     $('tab-register').classList.toggle('active', mode === 'register');
     $('plan-selector').classList.toggle('hidden', mode !== 'register');
+    $('email-field').classList.toggle('hidden', mode !== 'register');
+    $('auth-email').required = mode === 'register';
     $('auth-submit').textContent = mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta';
     $('auth-error').textContent = '';
   }
@@ -305,6 +307,7 @@
 
   function showEmptyState() {
     state.currentChatId = null;
+    $('messages-inner').innerHTML = '';
     $('messages').classList.add('hidden');
     $('empty-state').classList.remove('hidden');
     renderChatList();
@@ -599,14 +602,20 @@
       e.preventDefault();
       const username = $('auth-username').value.trim();
       const password = $('auth-password').value;
+      const email = authMode === 'register' ? $('auth-email').value.trim() : '';
       const plan = document.querySelector('input[name="plan"]:checked')?.value || 'gratuito';
       $('auth-error').textContent = '';
+      if (authMode === 'register' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        $('auth-error').textContent = 'Ingresa un correo electrónico válido.';
+        $('auth-email').focus();
+        return;
+      }
       const btn = $('auth-submit');
       btn.disabled = true;
       try {
         const data = await api(authMode === 'login' ? '/api/login' : '/api/register', {
           method: 'POST',
-          body: JSON.stringify({ username, password, plan }),
+          body: JSON.stringify({ username, password, email, plan }),
         });
         state.token = data.token;
         state.username = data.user.username;

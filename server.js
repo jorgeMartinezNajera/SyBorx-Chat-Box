@@ -52,24 +52,28 @@ function getUsage(identity) {
 app.post('/api/register', (req, res) => {
   const username = String(req.body?.username || '').trim();
   const password = String(req.body?.password || '');
+  const email = String(req.body?.email || '').trim().toLowerCase();
   const plan = store.ACCOUNT_PLANS.includes(req.body?.plan) ? req.body.plan : 'gratuito';
 
   if (username.length < 3) return res.status(400).json({ error: 'El usuario debe tener al menos 3 caracteres.' });
   if (!/^[a-zA-Z0-9_\-\.]+$/.test(username)) {
     return res.status(400).json({ error: 'El usuario solo puede contener letras, números, puntos, guiones y guion bajo.' });
   }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Ingresa un correo electrónico válido.' });
+  }
   if (password.length < 4) return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres.' });
 
   try {
-    const user = store.createUser(username, password, plan);
+    const user = store.createUser(username, password, plan, email);
     const token = store.createSession(user.username);
     res.status(201).json({
       token,
-      user: { username: user.username, plan: user.plan },
+      user: { username: user.username, email: user.email, plan: user.plan },
       usage: store.getUserUsage(user.username),
     });
   } catch (e) {
-    if (e.code === 'EXISTS') return res.status(409).json({ error: e.message });
+    if (e.code === 'EXISTS' || e.code === 'EMAIL_EXISTS') return res.status(409).json({ error: e.message });
     res.status(500).json({ error: e.message });
   }
 });

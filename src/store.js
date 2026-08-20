@@ -58,20 +58,30 @@ function findUser(username) {
   return getUsers().find((u) => u.username.toLowerCase() === String(username).toLowerCase());
 }
 
+function findUserByEmail(email) {
+  return getUsers().find((u) => u.email === String(email).toLowerCase());
+}
+
 function getUser(username) {
   return getUsers().find((u) => u.username === username);
 }
 
-function createUser(username, password, plan = 'gratuito') {
+function createUser(username, password, plan = 'gratuito', email = '') {
   const users = getUsers();
   if (findUser(username)) {
     const err = new Error('Ese usuario ya existe');
     err.code = 'EXISTS';
     throw err;
   }
+  if (email && findUserByEmail(email)) {
+    const err = new Error('Ese correo ya está registrado');
+    err.code = 'EMAIL_EXISTS';
+    throw err;
+  }
   const user = {
     id: uid(),
     username,
+    email: email ? email.toLowerCase() : '',
     password: hashPassword(password),
     plan: ACCOUNT_PLANS.includes(plan) ? plan : 'gratuito',
     responsesUsed: 0,
@@ -233,8 +243,10 @@ function removeLastMessage(username, id, role) {
 module.exports = {
   PLANS,
   ACCOUNT_PLANS,
+  getUsers,
   createUser,
   findUser,
+  findUserByEmail,
   getUser,
   verifyPassword,
   createSession,
